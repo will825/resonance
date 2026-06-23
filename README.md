@@ -2,12 +2,14 @@
 
 *by Terra Echo Studios — find the chords that resonate.*
 
+**▶︎ Live demo: [resonance-beige-omega.vercel.app](https://resonance-beige-omega.vercel.app)**
+
 An AI-assisted chord-progression generator for music producers. Describe a vibe in
 plain language ("dreamy lofi turnaround", "epic cinematic minor build"), pick a
 key/mode/tempo, and get a **musically-correct** progression you can **hear** in the
 browser and **export as MIDI** for any DAW.
 
-![Resonance — describe a vibe, get a voice-led chord progression you can hear and export as MIDI](docs/screenshot.png)
+[![Resonance — describe a vibe, get a voice-led chord progression you can hear and export as MIDI](docs/screenshot.png)](https://resonance-beige-omega.vercel.app)
 
 ## Architecture: AI intent, deterministic theory
 
