@@ -104,11 +104,3 @@ active mode's own scale (so `III` in a minor key is the natural mediant, and `bV
 major key is the borrowed sub-tonic). Unit tests in `__tests__/theory.test.ts` cover
 `buildChord` against the formula tables, Roman-numeral resolution (including borrowed
 `bVII` and the secondary dominant `V/vi`), and the voice-leading optimizer.
-
-## Deploying to Vercel
-
-1. Push this repo to GitHub and import it into Vercel (framework auto-detected as Next.js).
-2. In **Project → Settings → Environment Variables**, add `GROQ_API_KEY`.
-3. Deploy. The route handler is the only backend — no extra infra required.
-
-(The app deploys and runs without the env var too; it just stays on the fallback library.)
