@@ -65,7 +65,7 @@ function Segmented<T extends string>({
           type="button"
           onClick={() => onSelect(opt)}
           className={[
-            "flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium capitalize transition",
+            "min-w-0 flex-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-center text-xs font-medium capitalize transition",
             value === opt ? "bg-accent text-white" : "text-slate-400 hover:text-slate-200",
           ].join(" ")}
         >
@@ -78,65 +78,71 @@ function Segmented<T extends string>({
 
 export function Controls({ state, onChange }: ControlsProps) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-      <Field label="Key">
-        <select
-          className={selectClass}
-          value={state.musicKey}
-          onChange={(e) => onChange({ musicKey: e.target.value })}
-        >
-          {KEYS.map((k) => (
-            <option key={k} value={k}>
-              {k}
-            </option>
-          ))}
-        </select>
-      </Field>
+    <div className="space-y-4">
+      {/* Row 1: core musical settings */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Field label="Key">
+          <select
+            className={selectClass}
+            value={state.musicKey}
+            onChange={(e) => onChange({ musicKey: e.target.value })}
+          >
+            {KEYS.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-      <Field label="Mode">
-        <select
-          className={selectClass}
-          value={state.mode}
-          onChange={(e) => onChange({ mode: e.target.value as Mode })}
-        >
-          {MODES.map((m) => (
-            <option key={m.value} value={m.value}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-      </Field>
+        <Field label="Mode">
+          <select
+            className={selectClass}
+            value={state.mode}
+            onChange={(e) => onChange({ mode: e.target.value as Mode })}
+          >
+            {MODES.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-      <Field label={`Tempo · ${state.tempo} BPM`}>
-        <input
-          type="range"
-          min={60}
-          max={180}
-          value={state.tempo}
-          onChange={(e) => onChange({ tempo: Number(e.target.value) })}
-          className="mt-2.5 w-full"
-        />
-      </Field>
+        <Field label={`Tempo · ${state.tempo} BPM`}>
+          <input
+            type="range"
+            min={60}
+            max={180}
+            value={state.tempo}
+            onChange={(e) => onChange({ tempo: Number(e.target.value) })}
+            className="mt-2.5 w-full"
+          />
+        </Field>
 
-      <Field label="Bars">
-        <Segmented
-          options={["4", "8"] as const}
-          value={String(state.bars) as "4" | "8"}
-          onSelect={(v) => onChange({ bars: Number(v) })}
-        />
-      </Field>
+        <Field label="Bars">
+          <Segmented
+            options={["4", "8"] as const}
+            value={String(state.bars) as "4" | "8"}
+            onSelect={(v) => onChange({ bars: Number(v) })}
+          />
+        </Field>
+      </div>
 
-      <Field label="Voicing">
-        <Segmented
-          options={VOICINGS}
-          value={state.voicingStyle}
-          onSelect={(v) => onChange({ voicingStyle: v })}
-        />
-      </Field>
+      {/* Row 2: voicing + arpeggio get a full half each so the segments breathe */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="Voicing">
+          <Segmented
+            options={VOICINGS}
+            value={state.voicingStyle}
+            onSelect={(v) => onChange({ voicingStyle: v })}
+          />
+        </Field>
 
-      <Field label="Arpeggio">
-        <Segmented options={ARPS} value={state.arpeggio} onSelect={(v) => onChange({ arpeggio: v })} />
-      </Field>
+        <Field label="Arpeggio">
+          <Segmented options={ARPS} value={state.arpeggio} onSelect={(v) => onChange({ arpeggio: v })} />
+        </Field>
+      </div>
     </div>
   );
 }

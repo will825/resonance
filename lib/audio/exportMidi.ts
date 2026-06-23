@@ -57,7 +57,7 @@ export function downloadMidi(realized: RealizedChord[], spec: ProgressionSpec): 
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `chord-engine-${spec.key}-${spec.mode}.mid`;
+  a.download = `resonance-${spec.key}-${spec.mode}.mid`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

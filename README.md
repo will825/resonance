@@ -1,4 +1,6 @@
-# Chord Engine
+# Resonance
+
+*by Terra Echo Studios — find the chords that resonate.*
 
 An AI-assisted chord-progression generator for music producers. Describe a vibe in
 plain language ("dreamy lofi turnaround", "epic cinematic minor build"), pick a

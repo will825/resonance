@@ -163,11 +163,12 @@ export default function Home() {
     <main className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
       <header className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight sm:text-4xl">
-          <span className="text-accent">◆</span> Chord Engine
+          <span className="text-accent">◆</span> Resonance
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-400">
-          Describe a vibe — AI picks the creative intent, a deterministic theory engine turns it
-          into guaranteed-correct, voice-led chords you can hear and export as MIDI.
+          Find the chords that resonate — vibe in, MIDI out. AI picks the creative intent; a
+          deterministic theory engine turns it into guaranteed-correct, voice-led chords you can
+          hear and export to any DAW.
         </p>
       </header>
 

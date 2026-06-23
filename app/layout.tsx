@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Chord Engine — AI chord progression generator",
+  title: "Resonance — AI chord progression generator | Terra Echo Studios",
   description:
-    "Describe a vibe, get a musically-correct chord progression you can hear and export as MIDI. AI intent, deterministic theory.",
+    "Find the chords that resonate. Describe a vibe, get a musically-correct chord progression you can hear and export as MIDI. AI intent, deterministic theory.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
