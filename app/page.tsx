@@ -179,19 +179,9 @@ export default function Home() {
 
       <section className="mt-6 space-y-4 rounded-2xl border border-ink-700 bg-ink-800/50 p-5 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-sm">
-            <span
-              className={[
-                "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                generated.source === "ai"
-                  ? "bg-accent/20 text-accent-soft"
-                  : "bg-amber-500/15 text-amber-300",
-              ].join(" ")}
-            >
-              {generated.source === "ai" ? "✨ AI generated" : "⚙ Deterministic fallback"}
-            </span>
-            {generated.feel && <span className="text-slate-400">“{generated.feel}”</span>}
-          </div>
+          {generated.feel && (
+            <span className="text-sm text-slate-400">“{generated.feel}”</span>
+          )}
           {generated.source === "fallback" && generated.reason !== "initial" && (
             <span className="text-xs text-amber-300/80">
               {generated.reason === "no-api-key"
@@ -224,11 +214,6 @@ export default function Home() {
           onExport={handleExport}
         />
       </section>
-
-      <footer className="mt-8 text-center text-xs text-slate-600">
-        AI intent · deterministic theory · {realized.length} chords ·{" "}
-        {controls.musicKey} {controls.mode}
-      </footer>
     </main>
   );
 }
