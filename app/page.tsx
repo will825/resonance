@@ -20,10 +20,11 @@ interface Generated {
   reason?: string;
 }
 
-const SEED = deterministicFallback("C", "major", "uplifting pop anthem", 8);
+const INITIAL_VIBE = "dreamy lofi turnaround";
+const SEED = deterministicFallback("C", "major", INITIAL_VIBE, 8);
 
 export default function Home() {
-  const [vibe, setVibe] = useState("dreamy lofi turnaround");
+  const [vibe, setVibe] = useState(INITIAL_VIBE);
   const [controls, setControls] = useState<ControlsState>({
     musicKey: SEED.key,
     mode: SEED.mode,

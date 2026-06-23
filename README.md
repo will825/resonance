@@ -7,6 +7,8 @@ plain language ("dreamy lofi turnaround", "epic cinematic minor build"), pick a
 key/mode/tempo, and get a **musically-correct** progression you can **hear** in the
 browser and **export as MIDI** for any DAW.
 
+![Resonance — describe a vibe, get a voice-led chord progression you can hear and export as MIDI](docs/screenshot.png)
+
 ## Architecture: AI intent, deterministic theory
 
 The core principle — **music theory is deterministic; the LLM only supplies creative
