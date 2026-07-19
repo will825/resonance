@@ -3,6 +3,7 @@ import { Chord } from "tonal";
 import { buildChord, CHORD_FORMULAS, chordSymbol } from "@/lib/theory/chords";
 import { noteToMidi, midiToNote, pitchClassOf } from "@/lib/theory/scales";
 import { resolveRoman } from "@/lib/theory/romanNumerals";
+import { applyComplexity } from "@/lib/theory/complexity";
 import {
   naiveRootPosition,
   optimizeVoiceLeading,
@@ -99,6 +100,48 @@ describe("roman numeral resolution", () => {
     // Dorian i-IV vamp: the IV is major.
     expect(resolveRoman("IV", "C", "dorian")).toMatchObject({ rootChroma: pc("F"), quality: "maj" });
     expect(resolveRoman("i", "C", "dorian")).toMatchObject({ rootChroma: pc("C"), quality: "min" });
+  });
+});
+
+describe("complexity dial", () => {
+  it("strips to triads on simple", () => {
+    expect(applyComplexity("ii7", "simple")).toBe("ii");
+    expect(applyComplexity("Imaj7", "simple")).toBe("I");
+    expect(applyComplexity("V9", "simple")).toBe("V");
+    expect(applyComplexity("viiø7", "simple")).toBe("vii°");
+    expect(applyComplexity("bVII", "simple")).toBe("bVII");
+  });
+
+  it("upgrades to 7ths on rich", () => {
+    expect(applyComplexity("I", "rich")).toBe("Imaj7");
+    expect(applyComplexity("ii", "rich")).toBe("ii7");
+    expect(applyComplexity("V", "rich")).toBe("V7");
+    expect(applyComplexity("vii°", "rich")).toBe("viiø7");
+    expect(applyComplexity("ii9", "rich")).toBe("ii7");
+    expect(applyComplexity("bVII", "rich")).toBe("bVIImaj7");
+  });
+
+  it("upgrades to 9ths on lush", () => {
+    expect(applyComplexity("I", "lush")).toBe("Imaj9");
+    expect(applyComplexity("ii7", "lush")).toBe("ii9");
+    expect(applyComplexity("V7", "lush")).toBe("V9");
+  });
+
+  it("leaves auto, sus and secondary targets untouched", () => {
+    expect(applyComplexity("ii7", "auto")).toBe("ii7");
+    expect(applyComplexity("Isus4", "rich")).toBe("Isus4");
+    expect(applyComplexity("V/vi", "simple")).toBe("V/vi");
+    expect(applyComplexity("V/vi", "rich")).toBe("V7/vi");
+  });
+
+  it("produces tokens the resolver accepts at every level", () => {
+    const romans = ["I", "ii7", "V9", "vii°", "bVII", "V/vi"];
+    for (const level of ["simple", "rich", "lush"] as const) {
+      for (const r of romans) {
+        const t = applyComplexity(r, level);
+        expect(() => resolveRoman(t, "C", "major")).not.toThrow();
+      }
+    }
   });
 });
 

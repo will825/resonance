@@ -1,5 +1,6 @@
 "use client";
 
+import { COMPLEXITIES, type Complexity } from "@/lib/theory/complexity";
 import type { Arpeggio, Mode, VoicingStyle } from "@/lib/theory/types";
 
 const KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -27,6 +28,7 @@ export interface ControlsState {
   bars: number;
   voicingStyle: VoicingStyle;
   arpeggio: Arpeggio;
+  complexity: Complexity;
 }
 
 interface ControlsProps {
@@ -129,8 +131,8 @@ export function Controls({ state, onChange }: ControlsProps) {
         </Field>
       </div>
 
-      {/* Row 2: voicing + arpeggio get a full half each so the segments breathe */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Row 2: the musical character dials, each with room to breathe */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Field label="Voicing">
           <Segmented
             options={VOICINGS}
@@ -141,6 +143,14 @@ export function Controls({ state, onChange }: ControlsProps) {
 
         <Field label="Arpeggio">
           <Segmented options={ARPS} value={state.arpeggio} onSelect={(v) => onChange({ arpeggio: v })} />
+        </Field>
+
+        <Field label="Complexity">
+          <Segmented
+            options={COMPLEXITIES}
+            value={state.complexity}
+            onSelect={(v) => onChange({ complexity: v })}
+          />
         </Field>
       </div>
     </div>
