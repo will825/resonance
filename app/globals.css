@@ -4,6 +4,8 @@
 
 :root {
   color-scheme: light;
+  /* Shared paper-fiber grain, layered inside every torn piece. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.05'/%3E%3C/svg%3E");
 }
 
 html,
@@ -12,18 +14,80 @@ body {
 }
 
 /*
- * Construction-paper world: warm kraft ground with visible fiber grain.
- * The grain is an inline SVG turbulence texture so it costs no requests.
+ * Construction-paper world: a darker kraft tabletop with visible fiber grain.
  */
 body {
   @apply bg-paper text-ink antialiased;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.07'/%3E%3C/svg%3E");
 }
 
 /*
- * Paper cutout edges: subtly uneven border radii read as hand-cut shapes.
- * Three variants so neighboring pieces never match exactly.
+ * TORN PAPER
+ * The element itself stays transparent; ::before paints the paper fill
+ * (color/gradient + grain) and runs it through an SVG displacement filter
+ * (defined in page.tsx) so the edges rip like real construction paper.
+ * A hard drop-shadow after the tear reads as the piece resting on the page.
+ * Three filter seeds so neighboring pieces never tear the same way.
+ */
+/* :where() keeps specificity at zero so utilities like .absolute still win. */
+:where(.torn, .torn-2, .torn-3) {
+  position: relative;
+}
+.torn,
+.torn-2,
+.torn-3 {
+  isolation: isolate;
+}
+.torn::before,
+.torn-2::before,
+.torn-3::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--grain), var(--paper-fill);
+}
+.torn::before {
+  filter: url(#tear-1) drop-shadow(4px 6px 0 rgba(74, 55, 26, 0.28));
+}
+.torn-2::before {
+  filter: url(#tear-2) drop-shadow(5px 6px 0 rgba(74, 55, 26, 0.26));
+}
+.torn-3::before {
+  filter: url(#tear-3) drop-shadow(3px 5px 0 rgba(74, 55, 26, 0.28));
+}
+
+/* Paper fills — defined as gradients so solids and the brand sweep share one pipeline. */
+.fill-card {
+  --paper-fill: linear-gradient(#fffdf6, #fffdf6);
+}
+.fill-warm {
+  --paper-fill: linear-gradient(#fde3a0, #fbd98f);
+}
+.fill-paper {
+  --paper-fill: linear-gradient(#f2e6cb, #efe1c2);
+}
+.fill-blue {
+  --paper-fill: linear-gradient(#2e9bde, #2b90cf);
+}
+.fill-orange {
+  --paper-fill: linear-gradient(#f2711b, #e96812);
+}
+.fill-yellow {
+  --paper-fill: linear-gradient(#f7b32b, #f0a91f);
+}
+.fill-red {
+  --paper-fill: linear-gradient(#e85555, #de4a4a);
+}
+.fill-wave {
+  --paper-fill: linear-gradient(90deg, #2e9bde 0%, #f7b32b 38%, #f2711b 68%, #e85555 100%);
+}
+
+/*
+ * Scissor-cut edges for small controls (chips, selects, segments): subtly
+ * uneven radii read as hand-cut, keeping tiny text crisp where a torn edge
+ * would get messy. A collage mixes cut and torn pieces — so do we.
  */
 .paper-cut {
   border-radius: 16px 22px 18px 24px / 22px 16px 24px 18px;
@@ -35,19 +99,6 @@ body {
   border-radius: 14px 20px 15px 22px / 20px 14px 22px 15px;
 }
 
-/* Every cut piece of paper carries a whisper of its own grain. */
-.paper {
-  position: relative;
-}
-.paper::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.035'/%3E%3C/svg%3E");
-}
-
 /* Range slider styling */
 input[type="range"] {
   @apply h-2 cursor-pointer appearance-none rounded-full bg-line;
@@ -55,12 +106,12 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-thumb {
   @apply h-5 w-5 appearance-none rounded-full bg-wave-orange;
   border: 2px solid #fffdf6;
-  box-shadow: 2px 2px 0 rgba(63, 48, 29, 0.2);
+  box-shadow: 2px 2px 0 rgba(74, 55, 26, 0.25);
 }
 input[type="range"]::-moz-range-thumb {
   @apply h-5 w-5 rounded-full bg-wave-orange;
   border: 2px solid #fffdf6;
-  box-shadow: 2px 2px 0 rgba(63, 48, 29, 0.2);
+  box-shadow: 2px 2px 0 rgba(74, 55, 26, 0.25);
 }
 
 /* The playing chord wobbles gently, like a sticker peeling up off the page. */
@@ -82,9 +133,4 @@ input[type="range"]::-moz-range-thumb {
     animation: none;
     transform: scale(1.03);
   }
-}
-
-/* The waveform sweep — the brand gradient, used sparingly (Generate button). */
-.wave-gradient {
-  background-image: linear-gradient(90deg, #2e9bde 0%, #f7b32b 38%, #f2711b 68%, #e85555 100%);
 }

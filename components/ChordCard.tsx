@@ -10,25 +10,25 @@ interface ChordCardProps {
   onClick?: (index: number) => void;
 }
 
-/* Each card sits at its own slight angle, like cutouts glued by hand. */
+/* Each card is its own torn scrap, glued down at a slight angle. */
 const TILTS = ["-rotate-1", "rotate-1", "rotate-0", "rotate-1", "-rotate-1", "rotate-0"];
-const CUTS = ["paper-cut", "paper-cut-2", "paper-cut-3"];
+const TEARS = ["torn", "torn-2", "torn-3"];
 
 export function ChordCard({ chord, index, isPlaying, onClick }: ChordCardProps) {
   const noteNames = chord.midiNotes.map((m) => midiToNote(m));
   const tilt = TILTS[index % TILTS.length];
-  const cut = CUTS[index % CUTS.length];
+  const tear = TEARS[index % TEARS.length];
 
   return (
     <button
       type="button"
       onClick={() => onClick?.(index)}
       className={[
-        "paper group flex min-w-[8.5rem] flex-1 flex-col gap-2 border-2 px-4 py-3 text-left transition",
-        cut,
+        "group flex min-w-[8.5rem] flex-1 flex-col gap-2 px-4 py-3 text-left transition",
+        tear,
         isPlaying
-          ? "playing-wiggle z-10 border-wave-orange bg-wave-yellow/25 shadow-lift"
-          : `${tilt} border-line bg-card shadow-card hover:-translate-y-1 hover:border-wave-blue hover:shadow-lift`,
+          ? "playing-wiggle z-10 fill-warm"
+          : `${tilt} fill-card hover:-translate-y-1 hover:rotate-0`,
       ].join(" ")}
     >
       <div className="flex items-baseline justify-between">
@@ -44,7 +44,7 @@ export function ChordCard({ chord, index, isPlaying, onClick }: ChordCardProps) 
         {noteNames.map((n, i) => (
           <span
             key={`${n}-${i}`}
-            className="rounded-md bg-paper px-1.5 py-0.5 font-mono text-[11px] font-semibold text-ink-soft"
+            className="rounded-md bg-paper/70 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-ink-soft"
           >
             {n}
           </span>

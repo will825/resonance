@@ -14,9 +14,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        paper: "#F3EBDB",
+        paper: "#E7D6B8",
         card: "#FFFDF6",
-        line: "#DCCEAE",
+        line: "#C9B58E",
         ink: {
           DEFAULT: "#1D3D5C",
           strong: "#152C43",

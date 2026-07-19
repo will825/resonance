@@ -33,7 +33,7 @@ export function VibeInput({ value, onChange, onGenerate, loading }: VibeInputPro
           type="button"
           onClick={onGenerate}
           disabled={loading}
-          className="wave-gradient paper-cut -rotate-1 px-7 py-3 text-lg font-bold text-white shadow-lift transition hover:rotate-0 hover:shadow-card active:translate-y-1 active:shadow-press disabled:cursor-not-allowed disabled:opacity-60"
+          className="torn fill-wave -rotate-1 px-8 py-3 text-lg font-bold text-white transition hover:rotate-0 active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Generating…" : "Generate"}
         </button>

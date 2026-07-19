@@ -161,7 +161,43 @@ export default function Home() {
   const activeNotes = realized[focusIndex]?.midiNotes ?? realized[0]?.midiNotes ?? [];
 
   return (
-    <main className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
+    <main className="relative mx-auto max-w-5xl overflow-x-clip px-5 py-10 sm:py-14">
+      {/* Tear filters: displacement maps that rip the edges of every .torn piece. */}
+      <svg aria-hidden="true" className="absolute h-0 w-0">
+        <defs>
+          <filter id="tear-1" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="4" seed="4" result="n" />
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="10" />
+          </filter>
+          <filter id="tear-2" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.042" numOctaves="4" seed="11" result="n" />
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="12" />
+          </filter>
+          <filter id="tear-3" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="4" seed="27" result="n" />
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="8" />
+          </filter>
+        </defs>
+      </svg>
+
+      {/* Loose scraps of construction paper around the collage. */}
+      <div
+        aria-hidden="true"
+        className="torn-2 fill-blue pointer-events-none absolute -left-16 top-24 -z-10 hidden h-24 w-52 -rotate-12 sm:block"
+      />
+      <div
+        aria-hidden="true"
+        className="torn fill-yellow pointer-events-none absolute -right-20 top-64 -z-10 hidden h-20 w-56 rotate-6 sm:block"
+      />
+      <div
+        aria-hidden="true"
+        className="torn-3 fill-red pointer-events-none absolute -left-12 bottom-40 -z-10 hidden h-16 w-44 rotate-3 sm:block"
+      />
+      <div
+        aria-hidden="true"
+        className="torn fill-orange pointer-events-none absolute -right-14 bottom-72 -z-10 hidden h-14 w-40 -rotate-6 sm:block"
+      />
+
       <header className="mb-10 flex flex-col items-center text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -178,12 +214,12 @@ export default function Home() {
         </p>
       </header>
 
-      <section className="paper paper-cut space-y-6 border-2 border-line bg-card p-5 shadow-lift sm:p-7">
+      <section className="torn fill-card space-y-6 p-6 sm:p-8">
         <VibeInput value={vibe} onChange={setVibe} onGenerate={handleGenerate} loading={loading} />
         <Controls state={controls} onChange={patchControls} />
       </section>
 
-      <section className="paper paper-cut-2 mt-8 space-y-4 border-2 border-line bg-card p-5 shadow-lift sm:p-7">
+      <section className="torn-2 fill-card mt-10 space-y-4 p-6 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
           {generated.feel && (
             <span className="text-sm font-medium text-ink-soft">“{generated.feel}”</span>
@@ -207,7 +243,7 @@ export default function Home() {
 
         {generated.notes && <p className="text-xs text-ink-faint">{generated.notes}</p>}
 
-        <div className="paper-cut-3 border-2 border-line bg-paper p-3 shadow-card">
+        <div className="torn-3 fill-paper p-4">
           <Keyboard activeNotes={activeNotes} />
         </div>
 
