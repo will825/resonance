@@ -12,7 +12,7 @@ interface ProgressionViewProps {
 export function ProgressionView({ chords, playingIndex, onChordClick }: ProgressionViewProps) {
   if (chords.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-line text-sm text-ink-faint">
+      <div className="paper-cut flex h-32 items-center justify-center border-2 border-dashed border-line text-sm font-semibold text-ink-faint">
         Describe a vibe and hit Generate to build a progression.
       </div>
     );

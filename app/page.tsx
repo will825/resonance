@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controls, type ControlsState } from "@/components/Controls";
 import { Keyboard } from "@/components/Keyboard";
-import { LogoMark } from "@/components/Logo";
 import { ProgressionView } from "@/components/ProgressionView";
 import { Transport } from "@/components/Transport";
 import { VibeInput } from "@/components/VibeInput";
@@ -164,23 +163,27 @@ export default function Home() {
   return (
     <main className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
       <header className="mb-10 flex flex-col items-center text-center">
-        <LogoMark className="h-14 w-auto sm:h-16" />
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink-strong sm:text-4xl">
-          Resonance
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-ink-soft">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt=""
+          className="h-36 w-auto sm:h-44"
+          draggable={false}
+        />
+        <h1 className="sr-only">Resonance</h1>
+        <p className="mt-4 max-w-2xl text-sm text-ink-soft">
           Find the chords that resonate — vibe in, MIDI out. AI picks the creative intent; a
           music-theory engine turns it into guaranteed-correct, voice-led chords you can hear
           and export to any DAW.
         </p>
       </header>
 
-      <section className="space-y-6 rounded-3xl border border-line bg-card/70 p-5 shadow-card sm:p-7">
+      <section className="paper paper-cut space-y-6 border-2 border-line bg-card p-5 shadow-lift sm:p-7">
         <VibeInput value={vibe} onChange={setVibe} onGenerate={handleGenerate} loading={loading} />
         <Controls state={controls} onChange={patchControls} />
       </section>
 
-      <section className="mt-6 space-y-4 rounded-3xl border border-line bg-card/70 p-5 shadow-card sm:p-7">
+      <section className="paper paper-cut-2 mt-8 space-y-4 border-2 border-line bg-card p-5 shadow-lift sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-2">
           {generated.feel && (
             <span className="text-sm font-medium text-ink-soft">“{generated.feel}”</span>
@@ -204,7 +207,7 @@ export default function Home() {
 
         {generated.notes && <p className="text-xs text-ink-faint">{generated.notes}</p>}
 
-        <div className="rounded-2xl border border-line bg-paper p-3">
+        <div className="paper-cut-3 border-2 border-line bg-paper p-3 shadow-card">
           <Keyboard activeNotes={activeNotes} />
         </div>
 

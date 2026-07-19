@@ -46,7 +46,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const selectClass =
-  "rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink-strong shadow-card focus:border-wave-blue focus:outline-none";
+  "paper-cut-3 border-2 border-line bg-card px-3 py-2 text-sm font-semibold text-ink-strong shadow-card focus:border-wave-blue focus:outline-none";
 
 function Segmented<T extends string>({
   options,
@@ -58,15 +58,15 @@ function Segmented<T extends string>({
   onSelect: (v: T) => void;
 }) {
   return (
-    <div className="flex rounded-xl border border-line bg-card p-0.5 shadow-card">
+    <div className="paper-cut flex border-2 border-line bg-card p-1 shadow-card">
       {options.map((opt) => (
         <button
           key={opt}
           type="button"
           onClick={() => onSelect(opt)}
           className={[
-            "min-w-0 flex-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-center text-xs font-semibold capitalize transition",
-            value === opt ? "bg-wave-blue text-white" : "text-ink-soft hover:text-ink-strong",
+            "min-w-0 flex-1 whitespace-nowrap rounded-xl px-2.5 py-1.5 text-center text-xs font-bold capitalize transition",
+            value === opt ? "paper-cut-3 bg-wave-blue text-white shadow-press" : "text-ink-soft hover:text-ink-strong",
           ].join(" ")}
         >
           {opt}

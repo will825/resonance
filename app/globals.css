@@ -11,47 +11,80 @@ body {
   height: 100%;
 }
 
+/*
+ * Construction-paper world: warm kraft ground with visible fiber grain.
+ * The grain is an inline SVG turbulence texture so it costs no requests.
+ */
 body {
   @apply bg-paper text-ink antialiased;
   background-image:
-    radial-gradient(50rem 50rem at 112% -12%, rgba(46, 155, 222, 0.10), transparent 60%),
-    radial-gradient(46rem 46rem at -12% 108%, rgba(242, 113, 27, 0.08), transparent 55%);
-  background-attachment: fixed;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
+}
+
+/*
+ * Paper cutout edges: subtly uneven border radii read as hand-cut shapes.
+ * Three variants so neighboring pieces never match exactly.
+ */
+.paper-cut {
+  border-radius: 16px 22px 18px 24px / 22px 16px 24px 18px;
+}
+.paper-cut-2 {
+  border-radius: 22px 14px 24px 16px / 15px 23px 16px 22px;
+}
+.paper-cut-3 {
+  border-radius: 14px 20px 15px 22px / 20px 14px 22px 15px;
+}
+
+/* Every cut piece of paper carries a whisper of its own grain. */
+.paper {
+  position: relative;
+}
+.paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.035'/%3E%3C/svg%3E");
 }
 
 /* Range slider styling */
 input[type="range"] {
-  @apply h-1.5 cursor-pointer appearance-none rounded-full bg-line;
+  @apply h-2 cursor-pointer appearance-none rounded-full bg-line;
 }
 input[type="range"]::-webkit-slider-thumb {
-  @apply h-4 w-4 appearance-none rounded-full bg-wave-orange;
-  box-shadow: 0 0 0 4px rgba(242, 113, 27, 0.18);
+  @apply h-5 w-5 appearance-none rounded-full bg-wave-orange;
+  border: 2px solid #fffdf6;
+  box-shadow: 2px 2px 0 rgba(63, 48, 29, 0.2);
 }
 input[type="range"]::-moz-range-thumb {
-  @apply h-4 w-4 rounded-full border-0 bg-wave-orange;
+  @apply h-5 w-5 rounded-full bg-wave-orange;
+  border: 2px solid #fffdf6;
+  box-shadow: 2px 2px 0 rgba(63, 48, 29, 0.2);
 }
 
-@keyframes pulse-glow {
+/* The playing chord wobbles gently, like a sticker peeling up off the page. */
+@keyframes paper-wiggle {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(242, 113, 27, 0.45);
+    transform: rotate(-0.8deg) scale(1.03);
   }
   50% {
-    box-shadow: 0 0 0 7px rgba(242, 113, 27, 0);
+    transform: rotate(0.8deg) scale(1.03);
   }
 }
-.playing-glow {
-  animation: pulse-glow 1.2s ease-in-out infinite;
+.playing-wiggle {
+  animation: paper-wiggle 0.9s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .playing-glow {
+  .playing-wiggle {
     animation: none;
-    box-shadow: 0 0 0 3px rgba(242, 113, 27, 0.35);
+    transform: scale(1.03);
   }
 }
 
-/* The waveform sweep — the brand gradient, used sparingly (Generate button, accents). */
+/* The waveform sweep — the brand gradient, used sparingly (Generate button). */
 .wave-gradient {
   background-image: linear-gradient(90deg, #2e9bde 0%, #f7b32b 38%, #f2711b 68%, #e85555 100%);
 }

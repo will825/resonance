@@ -1,9 +1,10 @@
 import type { Config } from "tailwindcss";
 
 /**
- * Resonance brand palette — derived from the Terra Echo Studios logo:
- * a warm white ground, navy hand-drawn wordmark, and a waveform that
- * sweeps blue -> yellow -> orange -> red.
+ * Resonance brand palette — construction-paper edition.
+ * Derived from the Terra Echo Studios logo (blue -> yellow -> orange -> red
+ * waveform, navy wordmark) laid over warm kraft paper. Shadows are hard
+ * offsets, like paper cutouts stacked on a desk.
  */
 const config: Config = {
   content: [
@@ -13,14 +14,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        paper: "#FAF7F1",
-        card: "#FFFFFF",
-        line: "#E8E2D6",
+        paper: "#F3EBDB",
+        card: "#FFFDF6",
+        line: "#DCCEAE",
         ink: {
           DEFAULT: "#1D3D5C",
           strong: "#152C43",
           soft: "#4A6B8A",
-          faint: "#93A7B9",
+          faint: "#8FA3B5",
         },
         wave: {
           blue: "#2E9BDE",
@@ -30,13 +31,10 @@ const config: Config = {
           red: "#E85555",
         },
       },
-      fontFamily: {
-        sans: ["ui-rounded", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
-        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
-      },
       boxShadow: {
-        card: "0 1px 2px rgba(21, 44, 67, 0.06), 0 4px 16px rgba(21, 44, 67, 0.06)",
-        lift: "0 2px 4px rgba(21, 44, 67, 0.08), 0 10px 28px rgba(21, 44, 67, 0.10)",
+        card: "3px 4px 0 rgba(63, 48, 29, 0.14)",
+        lift: "5px 7px 0 rgba(63, 48, 29, 0.18)",
+        press: "1px 2px 0 rgba(63, 48, 29, 0.16)",
       },
     },
   },

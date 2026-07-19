@@ -24,7 +24,7 @@ export function Transport({
         onClick={isPlaying ? onStop : onPlay}
         disabled={!canPlay}
         className={[
-          "flex items-center gap-2 rounded-xl px-5 py-2.5 font-bold text-white shadow-lift transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50",
+          "paper-cut flex -rotate-1 items-center gap-2 px-5 py-2.5 text-lg font-bold text-white shadow-lift transition hover:rotate-0 active:translate-y-1 active:shadow-press disabled:cursor-not-allowed disabled:opacity-50",
           isPlaying ? "bg-wave-red" : "bg-wave-blue",
         ].join(" ")}
       >
@@ -43,7 +43,7 @@ export function Transport({
         type="button"
         onClick={onExport}
         disabled={!canPlay}
-        className="rounded-xl border border-line bg-card px-5 py-2.5 font-bold text-ink shadow-card transition hover:border-wave-orange hover:text-wave-orange disabled:cursor-not-allowed disabled:opacity-50"
+        className="paper-cut-2 rotate-1 border-2 border-line bg-card px-5 py-2.5 font-bold text-ink shadow-card transition hover:rotate-0 hover:border-wave-orange hover:text-wave-orange active:translate-y-1 active:shadow-press disabled:cursor-not-allowed disabled:opacity-50"
       >
         ↓ Download MIDI
       </button>
