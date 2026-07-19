@@ -27,13 +27,13 @@ export function VibeInput({ value, onChange, onGenerate, loading }: VibeInputPro
             if (e.key === "Enter" && !loading) onGenerate();
           }}
           placeholder="describe the vibe… e.g. dreamy lofi turnaround"
-          className="flex-1 rounded-lg border border-ink-600 bg-ink-800 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
+          className="flex-1 rounded-xl border border-line bg-card px-4 py-3 text-ink-strong shadow-card placeholder:text-ink-faint focus:border-wave-blue focus:outline-none focus:ring-2 focus:ring-wave-blue/25"
         />
         <button
           type="button"
           onClick={onGenerate}
           disabled={loading}
-          className="rounded-lg bg-accent px-6 py-3 font-semibold text-white transition hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-60"
+          className="wave-gradient rounded-xl px-7 py-3 font-bold text-white shadow-lift transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Generating…" : "Generate"}
         </button>
@@ -44,7 +44,7 @@ export function VibeInput({ value, onChange, onGenerate, loading }: VibeInputPro
             key={s}
             type="button"
             onClick={() => onChange(s)}
-            className="rounded-full border border-ink-600 px-3 py-1 text-xs text-slate-400 transition hover:border-accent/60 hover:text-slate-200"
+            className="rounded-full border border-line bg-card px-3 py-1 text-xs text-ink-soft transition hover:border-wave-blue hover:text-wave-blue"
           >
             {s}
           </button>

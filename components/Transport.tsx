@@ -24,8 +24,8 @@ export function Transport({
         onClick={isPlaying ? onStop : onPlay}
         disabled={!canPlay}
         className={[
-          "flex items-center gap-2 rounded-lg px-5 py-2.5 font-semibold transition disabled:cursor-not-allowed disabled:opacity-50",
-          isPlaying ? "bg-mint text-ink-900 hover:opacity-90" : "bg-accent text-white hover:bg-accent-soft",
+          "flex items-center gap-2 rounded-xl px-5 py-2.5 font-bold text-white shadow-lift transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50",
+          isPlaying ? "bg-wave-red" : "bg-wave-blue",
         ].join(" ")}
       >
         {isPlaying ? (
@@ -43,12 +43,12 @@ export function Transport({
         type="button"
         onClick={onExport}
         disabled={!canPlay}
-        className="rounded-lg border border-ink-600 bg-ink-800 px-5 py-2.5 font-semibold text-slate-200 transition hover:border-accent/60 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-xl border border-line bg-card px-5 py-2.5 font-bold text-ink shadow-card transition hover:border-wave-orange hover:text-wave-orange disabled:cursor-not-allowed disabled:opacity-50"
       >
         ↓ Download MIDI
       </button>
 
-      <span className="ml-auto font-mono text-sm text-slate-400">{tempo} BPM</span>
+      <span className="ml-auto font-mono text-sm text-ink-soft">{tempo} BPM</span>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controls, type ControlsState } from "@/components/Controls";
 import { Keyboard } from "@/components/Keyboard";
+import { LogoMark } from "@/components/Logo";
 import { ProgressionView } from "@/components/ProgressionView";
 import { Transport } from "@/components/Transport";
 import { VibeInput } from "@/components/VibeInput";
@@ -162,29 +163,30 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
-      <header className="mb-8">
-        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight sm:text-4xl">
-          <span className="text-accent">◆</span> Resonance
+      <header className="mb-10 flex flex-col items-center text-center">
+        <LogoMark className="h-14 w-auto sm:h-16" />
+        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink-strong sm:text-4xl">
+          Resonance
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+        <p className="mt-2 max-w-2xl text-sm text-ink-soft">
           Find the chords that resonate — vibe in, MIDI out. AI picks the creative intent; a
-          deterministic theory engine turns it into guaranteed-correct, voice-led chords you can
-          hear and export to any DAW.
+          music-theory engine turns it into guaranteed-correct, voice-led chords you can hear
+          and export to any DAW.
         </p>
       </header>
 
-      <section className="space-y-6 rounded-2xl border border-ink-700 bg-ink-800/50 p-5 sm:p-7">
+      <section className="space-y-6 rounded-3xl border border-line bg-card/70 p-5 shadow-card sm:p-7">
         <VibeInput value={vibe} onChange={setVibe} onGenerate={handleGenerate} loading={loading} />
         <Controls state={controls} onChange={patchControls} />
       </section>
 
-      <section className="mt-6 space-y-4 rounded-2xl border border-ink-700 bg-ink-800/50 p-5 sm:p-7">
+      <section className="mt-6 space-y-4 rounded-3xl border border-line bg-card/70 p-5 shadow-card sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-2">
           {generated.feel && (
-            <span className="text-sm text-slate-400">“{generated.feel}”</span>
+            <span className="text-sm font-medium text-ink-soft">“{generated.feel}”</span>
           )}
           {generated.source === "fallback" && generated.reason !== "initial" && (
-            <span className="text-xs text-amber-300/80">
+            <span className="text-xs text-wave-orange">
               {generated.reason === "no-api-key"
                 ? "No GROQ_API_KEY set — using the curated library."
                 : generated.reason === "rate-limited"
@@ -200,9 +202,9 @@ export default function Home() {
           onChordClick={handleChordClick}
         />
 
-        {generated.notes && <p className="text-xs text-slate-500">{generated.notes}</p>}
+        {generated.notes && <p className="text-xs text-ink-faint">{generated.notes}</p>}
 
-        <div className="rounded-xl border border-ink-700 bg-ink-900/40 p-3">
+        <div className="rounded-2xl border border-line bg-paper p-3">
           <Keyboard activeNotes={activeNotes} />
         </div>
 
@@ -215,6 +217,10 @@ export default function Home() {
           onExport={handleExport}
         />
       </section>
+
+      <footer className="mt-10 text-center text-xs text-ink-faint">
+        Resonance · Terra Echo Studios
+      </footer>
     </main>
   );
 }

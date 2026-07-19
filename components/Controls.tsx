@@ -37,7 +37,7 @@ interface ControlsProps {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
         {label}
       </span>
       {children}
@@ -46,7 +46,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const selectClass =
-  "rounded-lg border border-ink-600 bg-ink-800 px-3 py-2 text-sm text-slate-100 focus:border-accent focus:outline-none";
+  "rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink-strong shadow-card focus:border-wave-blue focus:outline-none";
 
 function Segmented<T extends string>({
   options,
@@ -58,15 +58,15 @@ function Segmented<T extends string>({
   onSelect: (v: T) => void;
 }) {
   return (
-    <div className="flex rounded-lg border border-ink-600 bg-ink-800 p-0.5">
+    <div className="flex rounded-xl border border-line bg-card p-0.5 shadow-card">
       {options.map((opt) => (
         <button
           key={opt}
           type="button"
           onClick={() => onSelect(opt)}
           className={[
-            "min-w-0 flex-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-center text-xs font-medium capitalize transition",
-            value === opt ? "bg-accent text-white" : "text-slate-400 hover:text-slate-200",
+            "min-w-0 flex-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-center text-xs font-semibold capitalize transition",
+            value === opt ? "bg-wave-blue text-white" : "text-ink-soft hover:text-ink-strong",
           ].join(" ")}
         >
           {opt}

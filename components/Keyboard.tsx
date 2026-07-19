@@ -75,8 +75,8 @@ export function Keyboard({ activeNotes, low = 36, high = 84 }: KeyboardProps) {
           width={k.w - 1}
           height={k.h}
           rx={2}
-          className={k.on ? "fill-accent" : "fill-slate-100"}
-          stroke="#0a0a0f"
+          className={k.on ? "fill-wave-blue" : "fill-white"}
+          stroke="#D8D2C6"
           strokeWidth={1}
         />
       ))}
@@ -88,8 +88,8 @@ export function Keyboard({ activeNotes, low = 36, high = 84 }: KeyboardProps) {
           width={k.w}
           height={k.h}
           rx={1.5}
-          className={k.on ? "fill-accent-soft" : "fill-ink-900"}
-          stroke="#0a0a0f"
+          className={k.on ? "fill-wave-orange" : "fill-ink-strong"}
+          stroke="#152C43"
           strokeWidth={1}
         />
       ))}
