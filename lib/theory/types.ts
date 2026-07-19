@@ -14,6 +14,12 @@ export type VoicingStyle = "close" | "open" | "drop2";
 
 export type Arpeggio = "none" | "up" | "down" | "updown";
 
+/** How fast an arpeggio cycles: spread over the bar, or at a fixed note value. */
+export type ArpRate = "auto" | "4n" | "8n" | "16n";
+
+/** Comping rhythm applied to block (non-arpeggiated) chords. */
+export type Rhythm = "block" | "pulse8" | "charleston" | "push";
+
 export interface ChordSpec {
   /** e.g. "ii7", "V9", "bVII", "V/vi" */
   roman: string;
@@ -31,6 +37,10 @@ export interface ProgressionSpec {
   feel: string;
   voicingStyle: VoicingStyle;
   arpeggio: Arpeggio;
+  /** arpeggio speed; "auto" spreads the tones evenly across each bar */
+  arpRate?: ArpRate;
+  /** comping rhythm for block chords */
+  rhythm?: Rhythm;
   progression: ChordSpec[];
   /** optional human-readable explanation */
   notes?: string;

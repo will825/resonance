@@ -1,7 +1,7 @@
 "use client";
 
 import { COMPLEXITIES, type Complexity } from "@/lib/theory/complexity";
-import type { Arpeggio, Mode, VoicingStyle } from "@/lib/theory/types";
+import type { Arpeggio, ArpRate, Mode, Rhythm, VoicingStyle } from "@/lib/theory/types";
 
 const KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
@@ -20,6 +20,18 @@ const MODES: { value: Mode; label: string }[] = [
 
 const VOICINGS: VoicingStyle[] = ["close", "open", "drop2"];
 const ARPS: Arpeggio[] = ["none", "up", "down", "updown"];
+const ARP_RATES: { value: ArpRate; label: string }[] = [
+  { value: "auto", label: "auto" },
+  { value: "4n", label: "1/4" },
+  { value: "8n", label: "1/8" },
+  { value: "16n", label: "1/16" },
+];
+const RHYTHMS: { value: Rhythm; label: string }[] = [
+  { value: "block", label: "block" },
+  { value: "pulse8", label: "8ths" },
+  { value: "charleston", label: "charleston" },
+  { value: "push", label: "push" },
+];
 
 export interface ControlsState {
   musicKey: string;
@@ -28,6 +40,8 @@ export interface ControlsState {
   bars: number;
   voicingStyle: VoicingStyle;
   arpeggio: Arpeggio;
+  arpRate: ArpRate;
+  rhythm: Rhythm;
   complexity: Complexity;
 }
 
@@ -55,23 +69,28 @@ function Segmented<T extends string>({
   value,
   onSelect,
 }: {
-  options: readonly T[];
+  options: readonly (T | { value: T; label: string })[];
   value: T;
   onSelect: (v: T) => void;
 }) {
+  const normalized = options.map((o) =>
+    typeof o === "string" ? { value: o, label: o } : o,
+  );
   return (
     <div className="paper-cut flex border-2 border-line bg-card p-1 shadow-card">
-      {options.map((opt) => (
+      {normalized.map((opt) => (
         <button
-          key={opt}
+          key={opt.value}
           type="button"
-          onClick={() => onSelect(opt)}
+          onClick={() => onSelect(opt.value)}
           className={[
             "min-w-0 flex-1 whitespace-nowrap rounded-xl px-2.5 py-1.5 text-center text-xs font-bold capitalize transition",
-            value === opt ? "paper-cut-3 bg-wave-blue text-white shadow-press" : "text-ink-soft hover:text-ink-strong",
+            value === opt.value
+              ? "paper-cut-3 bg-wave-blue text-white shadow-press"
+              : "text-ink-soft hover:text-ink-strong",
           ].join(" ")}
         >
-          {opt}
+          {opt.label}
         </button>
       ))}
     </div>
@@ -141,15 +160,31 @@ export function Controls({ state, onChange }: ControlsProps) {
           />
         </Field>
 
-        <Field label="Arpeggio">
-          <Segmented options={ARPS} value={state.arpeggio} onSelect={(v) => onChange({ arpeggio: v })} />
-        </Field>
-
         <Field label="Complexity">
           <Segmented
             options={COMPLEXITIES}
             value={state.complexity}
             onSelect={(v) => onChange({ complexity: v })}
+          />
+        </Field>
+
+        <Field label="Rhythm">
+          <Segmented
+            options={RHYTHMS}
+            value={state.rhythm}
+            onSelect={(v) => onChange({ rhythm: v })}
+          />
+        </Field>
+
+        <Field label="Arpeggio">
+          <Segmented options={ARPS} value={state.arpeggio} onSelect={(v) => onChange({ arpeggio: v })} />
+        </Field>
+
+        <Field label="Arp rate">
+          <Segmented
+            options={ARP_RATES}
+            value={state.arpRate}
+            onSelect={(v) => onChange({ arpRate: v })}
           />
         </Field>
       </div>

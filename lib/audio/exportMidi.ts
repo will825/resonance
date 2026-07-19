@@ -1,53 +1,97 @@
 import { Midi } from "@tonejs/midi";
-import { midiToNote } from "@/lib/theory/scales";
+import { arpSchedule, rhythmEvents } from "@/lib/theory/rhythm";
+import { midiToNote, pitchClassOf } from "@/lib/theory/scales";
 import type { ProgressionSpec, RealizedChord } from "@/lib/theory/types";
 
 const SECONDS_PER_BAR = (bpm: number) => (60 / bpm) * 4; // 4/4
 
-/** Build an in-memory MIDI file from realized chords. Returns the bytes. */
-export function buildMidi(realized: RealizedChord[], spec: ProgressionSpec): Uint8Array {
+export interface ExportOptions {
+  /** include a root-note bassline as a second track (default true) */
+  bass?: boolean;
+}
+
+/** Root of a chord placed in a bass register (C2..B2). */
+function bassMidi(chord: RealizedChord): number {
+  return 36 + pitchClassOf(chord.rootMidi);
+}
+
+/**
+ * Build an in-memory multi-track MIDI file (chords + optional bass) honoring
+ * the comping rhythm, arpeggio setting and rate. Returns the bytes.
+ */
+export function buildMidi(
+  realized: RealizedChord[],
+  spec: ProgressionSpec,
+  options: ExportOptions = {},
+): Uint8Array {
   const midi = new Midi();
   midi.header.setTempo(spec.tempo);
-  const track = midi.addTrack();
-  track.name = `${spec.key} ${spec.mode} — ${spec.feel}`;
 
+  const chordTrack = midi.addTrack();
+  chordTrack.name = `Chords — ${spec.key} ${spec.mode} (${spec.feel})`;
+
+  const secondsPerBeat = 60 / spec.tempo;
   const barSeconds = SECONDS_PER_BAR(spec.tempo);
-  let cursor = 0;
+  const vel = (scale = 1) =>
+    clamp((0.7 + (Math.random() * 0.16 - 0.08)) * scale);
 
+  let cursor = 0;
   for (const chord of realized) {
     const dur = chord.bars * barSeconds;
 
     if (spec.arpeggio === "none") {
-      for (const m of chord.midiNotes) {
-        track.addNote({
-          name: midiToNote(m),
-          time: cursor,
-          duration: dur * 0.95,
-          velocity: clamp(0.7 + (Math.random() * 0.16 - 0.08)),
-        });
+      for (const ev of rhythmEvents(chord.bars, spec.rhythm ?? "block")) {
+        for (const m of chord.midiNotes) {
+          chordTrack.addNote({
+            name: midiToNote(m),
+            time: cursor + ev.beat * secondsPerBeat,
+            duration: ev.beats * secondsPerBeat * 0.95,
+            velocity: vel(ev.accent),
+          });
+        }
       }
     } else {
       const order = arpeggioOrder(chord.midiNotes, spec.arpeggio);
-      const step = dur / order.length;
-      order.forEach((m, i) => {
-        track.addNote({
-          name: midiToNote(m),
-          time: cursor + i * step,
-          duration: step * 0.9,
-          velocity: clamp(0.7 + (Math.random() * 0.16 - 0.08)),
+      const schedule = arpSchedule(order.length, chord.bars * 4, spec.arpRate ?? "auto");
+      for (const step of schedule) {
+        chordTrack.addNote({
+          name: midiToNote(order[step.orderIndex]),
+          time: cursor + step.beat * secondsPerBeat,
+          duration: step.beats * secondsPerBeat,
+          velocity: vel(),
         });
-      });
+      }
     }
 
     cursor += dur;
+  }
+
+  if (options.bass !== false) {
+    const bassTrack = midi.addTrack();
+    bassTrack.name = "Bass — roots";
+    let bassCursor = 0;
+    for (const chord of realized) {
+      const dur = chord.bars * barSeconds;
+      bassTrack.addNote({
+        name: midiToNote(bassMidi(chord)),
+        time: bassCursor,
+        duration: dur * 0.95,
+        velocity: clamp(0.75 + (Math.random() * 0.1 - 0.05)),
+      });
+      bassCursor += dur;
+    }
   }
 
   return midi.toArray();
 }
 
 /** Browser-only: build + trigger a download of the MIDI file. */
-export function downloadMidi(realized: RealizedChord[], spec: ProgressionSpec): void {
-  const bytes = buildMidi(realized, spec);
+export function downloadMidi(
+  realized: RealizedChord[],
+  spec: ProgressionSpec,
+  options: ExportOptions = {},
+): void {
+  const bytes = buildMidi(realized, spec, options);
   // Copy into a fresh ArrayBuffer so the Blob part type is unambiguous.
   const buffer = bytes.buffer.slice(
     bytes.byteOffset,

@@ -4,6 +4,8 @@ import { buildChord, CHORD_FORMULAS, chordSymbol } from "@/lib/theory/chords";
 import { noteToMidi, midiToNote, pitchClassOf } from "@/lib/theory/scales";
 import { resolveRoman } from "@/lib/theory/romanNumerals";
 import { applyComplexity } from "@/lib/theory/complexity";
+import { analyzeRoman, explainProgression } from "@/lib/theory/analyze";
+import { suggestChords } from "@/lib/theory/suggest";
 import {
   naiveRootPosition,
   optimizeVoiceLeading,
@@ -140,6 +142,55 @@ describe("complexity dial", () => {
       for (const r of romans) {
         const t = applyComplexity(r, level);
         expect(() => resolveRoman(t, "C", "major")).not.toThrow();
+      }
+    }
+  });
+});
+
+describe("harmonic analysis (teaching layer)", () => {
+  it("labels functions by degree", () => {
+    expect(analyzeRoman("I", "major").fn).toBe("tonic");
+    expect(analyzeRoman("ii7", "major").fn).toBe("subdominant");
+    expect(analyzeRoman("V7", "major").fn).toBe("dominant");
+    expect(analyzeRoman("vi", "major").fn).toBe("tonic");
+  });
+
+  it("tags borrowed and secondary chords", () => {
+    const borrowed = analyzeRoman("bVII", "major");
+    expect(borrowed.fn).toBe("chromatic");
+    expect(borrowed.tags).toContain("borrowed");
+
+    const secondary = analyzeRoman("V/vi", "major");
+    expect(secondary.fn).toBe("dominant");
+    expect(secondary.tags).toContain("secondary dominant");
+  });
+
+  it("explains a classic cadence", () => {
+    const text = explainProgression(["I", "IV", "V", "I"], "major");
+    expect(text).toMatch(/tonic/i);
+    expect(text).toMatch(/cadence/i);
+  });
+});
+
+describe("chord suggestions", () => {
+  it("offers diatonic, borrowed and secondary options ranked by flow", () => {
+    const s = suggestChords("major", "I", "V", "ii");
+    const groups = new Set(s.map((x) => x.group));
+    expect(groups.has("diatonic")).toBe(true);
+    expect(groups.has("borrowed")).toBe(true);
+    // Next chord is V (degree 5) — a V/V should be offered.
+    expect(s.some((x) => x.roman === "V/V")).toBe(true);
+    // The current chord is never suggested back.
+    expect(s.some((x) => x.roman === "ii")).toBe(false);
+    // After a tonic, subdominants should outrank tonics.
+    const firstDiatonic = s.filter((x) => x.group === "diatonic")[0];
+    expect(["ii", "IV"]).toContain(firstDiatonic.roman);
+  });
+
+  it("every suggestion resolves in the theory engine", () => {
+    for (const mode of ["major", "minor", "dorian"] as const) {
+      for (const s of suggestChords(mode, "i", "V", "iv")) {
+        expect(() => resolveRoman(s.roman, "C", mode)).not.toThrow();
       }
     }
   });

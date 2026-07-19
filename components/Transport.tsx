@@ -9,12 +9,14 @@ interface TransportProps {
   loop: boolean;
   instrument: InstrumentName;
   shareCopied: boolean;
+  includeBass: boolean;
   onPlay: () => void;
   onStop: () => void;
   onToggleLoop: () => void;
   onInstrumentChange: (name: InstrumentName) => void;
   onExport: () => void;
   onShare: () => void;
+  onToggleBass: () => void;
 }
 
 const INSTRUMENTS: InstrumentName[] = ["piano", "synth"];
@@ -26,12 +28,14 @@ export function Transport({
   loop,
   instrument,
   shareCopied,
+  includeBass,
   onPlay,
   onStop,
   onToggleLoop,
   onInstrumentChange,
   onExport,
   onShare,
+  onToggleBass,
 }: TransportProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -95,6 +99,21 @@ export function Transport({
         className="torn-2 fill-card rotate-1 px-6 py-2.5 font-bold text-ink transition hover:rotate-0 hover:text-wave-orange active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-50"
       >
         ↓ Download MIDI
+      </button>
+
+      <button
+        type="button"
+        onClick={onToggleBass}
+        aria-pressed={includeBass}
+        title="Include a root-note bass track in the MIDI file"
+        className={[
+          "paper-cut-3 border-2 px-3 py-2 text-xs font-bold transition active:translate-y-0.5",
+          includeBass
+            ? "border-wave-orange bg-wave-orange text-white shadow-press"
+            : "border-line bg-card text-ink-soft shadow-card hover:border-wave-orange hover:text-wave-orange",
+        ].join(" ")}
+      >
+        + bass
       </button>
 
       <button

@@ -22,7 +22,7 @@ export interface ResolvedChord {
   quality: ChordQuality;
 }
 
-interface ParsedToken {
+export interface ParsedToken {
   alteration: number;
   degreeIndex: number;
   isUpper: boolean;
@@ -30,6 +30,10 @@ interface ParsedToken {
 }
 
 /** Parse a single roman token (no secondary-dominant slash) into its parts. */
+export function parseRomanToken(token: string): ParsedToken {
+  return parseToken(token);
+}
+
 function parseToken(token: string): ParsedToken {
   let s = token.trim();
   let alteration = 0;
@@ -52,6 +56,10 @@ function parseToken(token: string): ParsedToken {
 }
 
 /** Diatonic triad quality at a degree, derived from the actual scale tones. */
+export function diatonicTriadQuality(chromas: number[], degree: number): BaseTriad {
+  return diatonicTriad(chromas, degree);
+}
+
 function diatonicTriad(chromas: number[], degree: number): BaseTriad {
   const n = chromas.length;
   const root = chromas[degree % n];

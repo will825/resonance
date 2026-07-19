@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChordEditor } from "@/components/ChordEditor";
 import { Controls, type ControlsState } from "@/components/Controls";
+import { HistoryStrip, type HistoryEntry } from "@/components/HistoryStrip";
 import { Keyboard } from "@/components/Keyboard";
 import { ProgressionView } from "@/components/ProgressionView";
 import { Transport } from "@/components/Transport";
@@ -9,9 +11,11 @@ import { VibeInput } from "@/components/VibeInput";
 import { deterministicFallback } from "@/lib/ai/fallback";
 import { ChordPlayer, type InstrumentName } from "@/lib/audio/player";
 import { downloadMidi } from "@/lib/audio/exportMidi";
+import { analyzeRoman, explainProgression } from "@/lib/theory/analyze";
 import { applyComplexity, COMPLEXITIES, type Complexity } from "@/lib/theory/complexity";
 import { realizeProgression } from "@/lib/theory/realize";
-import type { ChordSpec, Mode, ProgressionSpec } from "@/lib/theory/types";
+import { suggestChords } from "@/lib/theory/suggest";
+import type { ArpRate, ChordSpec, Mode, ProgressionSpec, Rhythm } from "@/lib/theory/types";
 
 interface Generated {
   progression: ChordSpec[];
@@ -23,8 +27,9 @@ interface Generated {
 
 const INITIAL_VIBE = "dreamy lofi turnaround";
 const SEED = deterministicFallback("C", "major", INITIAL_VIBE, 8);
+const HISTORY_KEY = "resonance.history.v1";
 
-/** Compact shape of a progression encoded into a share URL. */
+/** Compact shape of a progression encoded into a share URL / history entry. */
 interface SharePayload {
   v: string; // vibe
   k: string; // key
@@ -33,6 +38,8 @@ interface SharePayload {
   b: number; // bars setting
   vs: ControlsState["voicingStyle"];
   a: ControlsState["arpeggio"];
+  r?: ArpRate;
+  y?: Rhythm;
   c: Complexity;
   f: string; // feel
   p: ChordSpec[];
@@ -64,6 +71,24 @@ function decodeShare(code: string): SharePayload | null {
   }
 }
 
+function loadHistory(): HistoryEntry[] {
+  try {
+    const raw = window.localStorage.getItem(HISTORY_KEY);
+    const parsed = raw ? (JSON.parse(raw) as HistoryEntry[]) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistHistory(entries: HistoryEntry[]): void {
+  try {
+    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
+  } catch {
+    // storage full/unavailable — history is a convenience, not critical
+  }
+}
+
 export default function Home() {
   const [vibe, setVibe] = useState(INITIAL_VIBE);
   const [controls, setControls] = useState<ControlsState>({
@@ -73,6 +98,8 @@ export default function Home() {
     bars: 8,
     voicingStyle: SEED.voicingStyle,
     arpeggio: SEED.arpeggio,
+    arpRate: "auto",
+    rhythm: "block",
     complexity: "auto",
   });
   const [generated, setGenerated] = useState<Generated>({
@@ -87,9 +114,12 @@ export default function Home() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [focusIndex, setFocusIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [loop, setLoop] = useState(false);
   const [instrument, setInstrument] = useState<InstrumentName>("piano");
+  const [includeBass, setIncludeBass] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   const playerRef = useRef<ChordPlayer | null>(null);
 
@@ -107,12 +137,7 @@ export default function Home() {
     };
   }, []);
 
-  // Hydrate from a share link (?s=...) once on load.
-  useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("s");
-    if (!code) return;
-    const data = decodeShare(code);
-    if (!data) return;
+  const hydrateFromPayload = useCallback((data: SharePayload, reason: string) => {
     setVibe(data.v ?? "");
     setControls({
       musicKey: data.k,
@@ -121,6 +146,8 @@ export default function Home() {
       bars: data.b === 4 ? 4 : 8,
       voicingStyle: data.vs ?? "open",
       arpeggio: data.a ?? "none",
+      arpRate: data.r ?? "auto",
+      rhythm: data.y ?? "block",
       complexity: COMPLEXITIES.includes(data.c) ? data.c : "auto",
     });
     setGenerated({
@@ -128,9 +155,20 @@ export default function Home() {
       feel: data.f ?? data.v ?? "shared progression",
       notes: data.n,
       source: "fallback",
-      reason: "shared",
+      reason,
     });
+    setSelectedIndex(null);
+    setFocusIndex(0);
   }, []);
+
+  // Hydrate from a share link (?s=...) and load history once on mount.
+  useEffect(() => {
+    setHistory(loadHistory());
+    const code = new URLSearchParams(window.location.search).get("s");
+    if (!code) return;
+    const data = decodeShare(code);
+    if (data) hydrateFromPayload(data, "shared");
+  }, [hydrateFromPayload]);
 
   // The complexity dial rewrites roman tokens before the theory engine runs.
   const progression = useMemo(
@@ -150,6 +188,8 @@ export default function Home() {
       feel: generated.feel,
       voicingStyle: controls.voicingStyle,
       arpeggio: controls.arpeggio,
+      arpRate: controls.arpRate,
+      rhythm: controls.rhythm,
       progression,
       notes: generated.notes,
     }),
@@ -158,15 +198,85 @@ export default function Home() {
 
   const realized = useMemo(() => realizeProgression(spec), [spec]);
 
+  const analyses = useMemo(
+    () => progression.map((c) => analyzeRoman(c.roman, controls.mode)),
+    [progression, controls.mode],
+  );
+
+  const explanation = useMemo(
+    () =>
+      explainProgression(
+        progression.map((c) => c.roman),
+        controls.mode,
+      ),
+    [progression, controls.mode],
+  );
+
+  const suggestions = useMemo(() => {
+    if (selectedIndex === null || !generated.progression[selectedIndex]) return [];
+    const raw = generated.progression;
+    return suggestChords(
+      controls.mode,
+      raw[selectedIndex - 1]?.roman,
+      raw[selectedIndex + 1]?.roman,
+      raw[selectedIndex].roman,
+    );
+  }, [selectedIndex, generated.progression, controls.mode]);
+
   // Editing controls re-realizes locally; stop playback to avoid stale schedules.
   function patchControls(patch: Partial<ControlsState>) {
     setControls((c) => ({ ...c, ...patch }));
     handleStop();
   }
 
+  function currentPayload(): SharePayload {
+    return {
+      v: vibe,
+      k: controls.musicKey,
+      m: controls.mode,
+      t: controls.tempo,
+      b: controls.bars,
+      vs: controls.voicingStyle,
+      a: controls.arpeggio,
+      r: controls.arpRate,
+      y: controls.rhythm,
+      c: controls.complexity,
+      f: generated.feel,
+      p: generated.progression,
+      n: generated.notes,
+    };
+  }
+
+  function addToHistory(payload: SharePayload) {
+    setHistory((prev) => {
+      const entry: HistoryEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        ts: Date.now(),
+        feel: payload.f || payload.v || "untitled",
+        key: payload.k,
+        mode: payload.m,
+        starred: false,
+        code: encodeShare(payload),
+      };
+      let next = [entry, ...prev];
+      // Cap: keep every starred entry plus the most recent unstarred, max ~20.
+      const unstarred = next.filter((e) => !e.starred);
+      if (next.length > 20 && unstarred.length > 0) {
+        const toDrop = new Set(
+          unstarred.slice(Math.max(0, 20 - next.length + unstarred.length)).map((e) => e.id),
+        );
+        next = next.filter((e) => e.starred || !toDrop.has(e.id) || e.id === entry.id);
+        next = next.slice(0, 24);
+      }
+      persistHistory(next);
+      return next;
+    });
+  }
+
   async function handleGenerate() {
     setLoading(true);
     handleStop();
+    setSelectedIndex(null);
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -197,6 +307,21 @@ export default function Home() {
         arpeggio: data.spec.arpeggio,
       }));
       setFocusIndex(0);
+      addToHistory({
+        v: vibe,
+        k: controls.musicKey,
+        m: data.spec.mode,
+        t: data.spec.tempo,
+        b: controls.bars,
+        vs: data.spec.voicingStyle,
+        a: data.spec.arpeggio,
+        r: controls.arpRate,
+        y: controls.rhythm,
+        c: controls.complexity,
+        f: data.spec.feel,
+        p: data.spec.progression,
+        n: data.spec.notes,
+      });
     } catch {
       // Network failure: local deterministic fallback so the app never dead-ends.
       const fb = deterministicFallback(controls.musicKey, controls.mode, vibe, controls.bars);
@@ -251,36 +376,88 @@ export default function Home() {
     playerRef.current?.setInstrument(name);
   }
 
+  function auditionRoman(roman: string) {
+    const chord = realizeProgression({
+      ...spec,
+      progression: [{ roman: applyComplexity(roman, controls.complexity), bars: 1 }],
+    })[0];
+    if (chord) void playerRef.current?.preview(chord);
+  }
+
   function handleChordClick(index: number) {
     setFocusIndex(index);
     if (isPlaying) {
       // Jump playback to the clicked chord.
       void playFrom(index);
-    } else {
-      void playerRef.current?.preview(realized[index]);
+      return;
     }
+    setSelectedIndex(index);
+    void playerRef.current?.preview(realized[index]);
   }
+
+  // ----- editor operations (all on the raw, pre-complexity progression) -----
+
+  function editProgression(mutate: (prog: ChordSpec[]) => ChordSpec[]) {
+    handleStop();
+    setGenerated((g) => ({ ...g, progression: mutate([...g.progression]) }));
+  }
+
+  function handleReplace(roman: string) {
+    if (selectedIndex === null) return;
+    editProgression((prog) => {
+      prog[selectedIndex] = { ...prog[selectedIndex], roman };
+      return prog;
+    });
+    auditionRoman(roman);
+  }
+
+  function handleBars(bars: number) {
+    if (selectedIndex === null) return;
+    editProgression((prog) => {
+      prog[selectedIndex] = { ...prog[selectedIndex], bars };
+      return prog;
+    });
+  }
+
+  function handleMove(direction: -1 | 1) {
+    if (selectedIndex === null) return;
+    const target = selectedIndex + direction;
+    if (target < 0 || target >= generated.progression.length) return;
+    editProgression((prog) => {
+      [prog[selectedIndex], prog[target]] = [prog[target], prog[selectedIndex]];
+      return prog;
+    });
+    setSelectedIndex(target);
+    setFocusIndex(target);
+  }
+
+  function handleDuplicate() {
+    if (selectedIndex === null || generated.progression.length >= 16) return;
+    editProgression((prog) => {
+      prog.splice(selectedIndex + 1, 0, { ...prog[selectedIndex] });
+      return prog;
+    });
+  }
+
+  function handleRemove() {
+    if (selectedIndex === null || generated.progression.length <= 1) return;
+    editProgression((prog) => {
+      prog.splice(selectedIndex, 1);
+      return prog;
+    });
+    setSelectedIndex(null);
+    setFocusIndex(0);
+  }
+
+  // --------------------------------------------------------------------------
 
   function handleExport() {
     if (realized.length === 0) return;
-    downloadMidi(realized, spec);
+    downloadMidi(realized, spec, { bass: includeBass });
   }
 
   async function handleShare() {
-    const payload: SharePayload = {
-      v: vibe,
-      k: controls.musicKey,
-      m: controls.mode,
-      t: controls.tempo,
-      b: controls.bars,
-      vs: controls.voicingStyle,
-      a: controls.arpeggio,
-      c: controls.complexity,
-      f: generated.feel,
-      p: generated.progression,
-      n: generated.notes,
-    };
-    const url = `${window.location.origin}${window.location.pathname}?s=${encodeShare(payload)}`;
+    const url = `${window.location.origin}${window.location.pathname}?s=${encodeShare(currentPayload())}`;
     window.history.replaceState(null, "", url);
     try {
       await navigator.clipboard.writeText(url);
@@ -289,6 +466,30 @@ export default function Home() {
     }
     setShareCopied(true);
     window.setTimeout(() => setShareCopied(false), 2000);
+  }
+
+  function handleHistoryLoad(entry: HistoryEntry) {
+    const data = decodeShare(entry.code);
+    if (data) {
+      handleStop();
+      hydrateFromPayload(data, "history");
+    }
+  }
+
+  function handleHistoryStar(id: string) {
+    setHistory((prev) => {
+      const next = prev.map((e) => (e.id === id ? { ...e, starred: !e.starred } : e));
+      persistHistory(next);
+      return next;
+    });
+  }
+
+  function handleHistoryDelete(id: string) {
+    setHistory((prev) => {
+      const next = prev.filter((e) => e.id !== id);
+      persistHistory(next);
+      return next;
+    });
   }
 
   const activeNotes = realized[focusIndex]?.midiNotes ?? realized[0]?.midiNotes ?? [];
@@ -358,8 +559,7 @@ export default function Home() {
             <span className="text-sm font-medium text-ink-soft">“{generated.feel}”</span>
           )}
           {generated.source === "fallback" &&
-            generated.reason !== "initial" &&
-            generated.reason !== "shared" && (
+            !["initial", "shared", "history"].includes(generated.reason ?? "") && (
               <span className="text-xs text-wave-orange">
                 {generated.reason === "no-api-key"
                   ? "No GROQ_API_KEY set — using the curated library."
@@ -372,10 +572,35 @@ export default function Home() {
 
         <ProgressionView
           chords={realized}
+          analyses={analyses}
           playingIndex={playingIndex}
+          selectedIndex={selectedIndex}
           onChordClick={handleChordClick}
         />
 
+        {selectedIndex !== null && realized[selectedIndex] && (
+          <ChordEditor
+            index={selectedIndex}
+            chord={realized[selectedIndex]}
+            suggestions={suggestions}
+            canRemove={generated.progression.length > 1}
+            onReplace={handleReplace}
+            onBars={handleBars}
+            onMove={handleMove}
+            onDuplicate={handleDuplicate}
+            onRemove={handleRemove}
+            onClose={() => setSelectedIndex(null)}
+          />
+        )}
+
+        {explanation && (
+          <p className="text-xs text-ink-soft">
+            <span className="font-bold uppercase tracking-wider text-ink-faint">
+              Why it works —{" "}
+            </span>
+            {explanation}
+          </p>
+        )}
         {generated.notes && <p className="text-xs text-ink-faint">{generated.notes}</p>}
 
         <div className="torn-3 fill-paper p-4">
@@ -389,14 +614,23 @@ export default function Home() {
           loop={loop}
           instrument={instrument}
           shareCopied={shareCopied}
+          includeBass={includeBass}
           onPlay={() => void playFrom(0)}
           onStop={handleStop}
           onToggleLoop={handleToggleLoop}
           onInstrumentChange={handleInstrumentChange}
           onExport={handleExport}
           onShare={() => void handleShare()}
+          onToggleBass={() => setIncludeBass((b) => !b)}
         />
       </section>
+
+      <HistoryStrip
+        entries={history}
+        onLoad={handleHistoryLoad}
+        onStar={handleHistoryStar}
+        onDelete={handleHistoryDelete}
+      />
 
       <footer className="mt-10 text-center text-xs text-ink-faint">
         Resonance · Terra Echo Studios

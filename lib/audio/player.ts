@@ -1,4 +1,5 @@
 import * as Tone from "tone";
+import { arpSchedule, rhythmEvents } from "@/lib/theory/rhythm";
 import { midiToNote } from "@/lib/theory/scales";
 import type { ProgressionSpec, RealizedChord } from "@/lib/theory/types";
 
@@ -158,24 +159,33 @@ export class ChordPlayer {
   ): void {
     const instrument = this.currentInstrument();
     const notes = chord.midiNotes.map(midiToNote);
+    const secondsPerBeat = 60 / spec.tempo;
     const velocity = () => 0.55 + (Math.random() * 0.2 - 0.1); // +/-10% humanize
     const jitter = () => (Math.random() * 0.03 - 0.015); // +/-15ms
 
     if (spec.arpeggio === "none") {
-      instrument.triggerAttackRelease(notes, durSeconds * 0.95, time, velocity());
+      // Comping rhythm: each hit restates the full chord.
+      for (const ev of rhythmEvents(chord.bars, spec.rhythm ?? "block")) {
+        instrument.triggerAttackRelease(
+          notes,
+          ev.beats * secondsPerBeat * 0.95,
+          time + ev.beat * secondsPerBeat + (ev.beat > 0 ? jitter() : 0),
+          velocity() * ev.accent,
+        );
+      }
       return;
     }
 
     const order = arpeggioOrder(notes, spec.arpeggio);
-    const step = durSeconds / order.length;
-    order.forEach((note, i) => {
+    const schedule = arpSchedule(order.length, chord.bars * 4, spec.arpRate ?? "auto");
+    for (const step of schedule) {
       instrument.triggerAttackRelease(
-        note,
-        step * 0.9,
-        time + i * step + jitter(),
+        order[step.orderIndex],
+        step.beats * secondsPerBeat,
+        time + step.beat * secondsPerBeat + (step.beat > 0 ? jitter() : 0),
         velocity(),
       );
-    });
+    }
   }
 
   /** Audition a single chord (used when a chord card is clicked while stopped). */
