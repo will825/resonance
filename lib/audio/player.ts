@@ -191,6 +191,9 @@ export class ChordPlayer {
   /** Audition a single chord (used when a chord card is clicked while stopped). */
   async preview(chord: RealizedChord): Promise<void> {
     await this.ensureAudio();
+    // Cut whatever is still ringing so quick clicks don't bleed together.
+    this.synth?.releaseAll();
+    this.sampler?.releaseAll();
     const instrument = this.currentInstrument();
     const notes = chord.midiNotes.map(midiToNote);
     instrument.triggerAttackRelease(notes, 1.1, undefined, 0.5);
