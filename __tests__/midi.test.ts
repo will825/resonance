@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Midi } from "@tonejs/midi";
 import { buildMidi } from "@/lib/audio/exportMidi";
+import { generateMelody } from "@/lib/theory/melody";
 import { realizeProgression } from "@/lib/theory/realize";
 import type { ProgressionSpec } from "@/lib/theory/types";
 
@@ -53,6 +54,15 @@ describe("MIDI export", () => {
     const realized = realizeProgression(spec);
     const parsed = new Midi(buildMidi(realized, spec, { bass: false }));
     expect(parsed.tracks).toHaveLength(1);
+  });
+
+  it("adds a melody track when a melody is provided", () => {
+    const realized = realizeProgression(spec);
+    const melody = generateMelody(realized, spec);
+    const parsed = new Midi(buildMidi(realized, spec, { bass: true, melody }));
+    expect(parsed.tracks).toHaveLength(3); // chords + bass + melody
+    const melodyTrack = parsed.tracks.find((t) => t.name === "Melody");
+    expect(melodyTrack?.notes.length).toBe(melody.length);
   });
 
   it("tiles comping rhythms across each chord", () => {

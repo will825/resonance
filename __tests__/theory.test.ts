@@ -6,6 +6,7 @@ import { resolveRoman } from "@/lib/theory/romanNumerals";
 import { applyComplexity } from "@/lib/theory/complexity";
 import { analyzeRoman, explainProgression } from "@/lib/theory/analyze";
 import { suggestChords } from "@/lib/theory/suggest";
+import { generateMelody } from "@/lib/theory/melody";
 import {
   naiveRootPosition,
   optimizeVoiceLeading,
@@ -221,6 +222,54 @@ describe("voice-leading optimizer", () => {
       const naivePcs = new Set(naiveRootPosition(progression)[i].map(pitchClassOf));
       expect(pcs).toEqual(naivePcs); // same chord tones, just revoiced
     });
+  });
+});
+
+describe("melody generation", () => {
+  const spec: ProgressionSpec = {
+    key: "C",
+    mode: "major",
+    tempo: 90,
+    feel: "test",
+    voicingStyle: "open",
+    arpeggio: "none",
+    progression: [
+      { roman: "Imaj7", bars: 1 },
+      { roman: "vi7", bars: 1 },
+      { roman: "ii7", bars: 1 },
+      { roman: "V7", bars: 1 },
+    ],
+  };
+  const realized = realizeProgression(spec);
+
+  it("stays in a singable register and is deterministic", () => {
+    const a = generateMelody(realized, spec);
+    const b = generateMelody(realized, spec);
+    expect(a.length).toBeGreaterThan(realized.length);
+    expect(a).toEqual(b); // same progression -> same melody
+    for (const n of a) {
+      expect(n.midi).toBeGreaterThanOrEqual(60);
+      expect(n.midi).toBeLessThanOrEqual(90);
+    }
+  });
+
+  it("lands each chord's downbeat on a chord tone", () => {
+    const melody = generateMelody(realized, spec);
+    let beat = 0;
+    for (const chord of realized) {
+      const downbeatNote = melody.find((n) => n.beat === beat);
+      expect(downbeatNote).toBeDefined();
+      const chordPcs = new Set(chord.midiNotes.map((m) => m % 12));
+      expect(chordPcs.has(downbeatNote!.midi % 12)).toBe(true);
+      beat += chord.bars * 4;
+    }
+  });
+
+  it("moves mostly by small intervals", () => {
+    const melody = generateMelody(realized, spec);
+    for (let i = 1; i < melody.length; i++) {
+      expect(Math.abs(melody[i].midi - melody[i - 1].midi)).toBeLessThanOrEqual(9);
+    }
   });
 });
 

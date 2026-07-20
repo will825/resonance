@@ -6,13 +6,17 @@ import { Controls, type ControlsState } from "@/components/Controls";
 import { HistoryStrip, type HistoryEntry } from "@/components/HistoryStrip";
 import { Keyboard } from "@/components/Keyboard";
 import { ProgressionView } from "@/components/ProgressionView";
+import { SongArranger, SECTION_NAMES, type Section } from "@/components/SongArranger";
 import { Transport } from "@/components/Transport";
 import { VibeInput } from "@/components/VibeInput";
 import { deterministicFallback } from "@/lib/ai/fallback";
 import { ChordPlayer, type InstrumentName } from "@/lib/audio/player";
 import { downloadMidi } from "@/lib/audio/exportMidi";
+import type { MidiOutputInfo } from "@/lib/audio/webmidi";
+import { WebMidiOut } from "@/lib/audio/webmidi";
 import { analyzeRoman, explainProgression } from "@/lib/theory/analyze";
 import { applyComplexity, COMPLEXITIES, type Complexity } from "@/lib/theory/complexity";
+import { generateMelody } from "@/lib/theory/melody";
 import { realizeProgression } from "@/lib/theory/realize";
 import { suggestChords } from "@/lib/theory/suggest";
 import type { ArpRate, ChordSpec, Mode, ProgressionSpec, Rhythm } from "@/lib/theory/types";
@@ -28,6 +32,7 @@ interface Generated {
 const INITIAL_VIBE = "dreamy lofi turnaround";
 const SEED = deterministicFallback("C", "major", INITIAL_VIBE, 8);
 const HISTORY_KEY = "resonance.history.v1";
+const SECTIONS_KEY = "resonance.sections.v1";
 
 /** Compact shape of a progression encoded into a share URL / history entry. */
 interface SharePayload {
@@ -118,8 +123,15 @@ export default function Home() {
   const [loop, setLoop] = useState(false);
   const [instrument, setInstrument] = useState<InstrumentName>("piano");
   const [includeBass, setIncludeBass] = useState(true);
+  const [includeMelody, setIncludeMelody] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [isPlayingSong, setIsPlayingSong] = useState(false);
+
+  const [midiSupported, setMidiSupported] = useState(false);
+  const [midiOutputs, setMidiOutputs] = useState<MidiOutputInfo[]>([]);
+  const [midiOutId, setMidiOutId] = useState<string | null>(null);
 
   const playerRef = useRef<ChordPlayer | null>(null);
 
@@ -161,14 +173,33 @@ export default function Home() {
     setFocusIndex(0);
   }, []);
 
-  // Hydrate from a share link (?s=...) and load history once on mount.
+  // Hydrate from a share link (?s=...) and load saved state once on mount.
   useEffect(() => {
     setHistory(loadHistory());
+    try {
+      const raw = window.localStorage.getItem(SECTIONS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Section[];
+        if (Array.isArray(parsed)) setSections(parsed);
+      }
+    } catch {
+      // ignore corrupt storage
+    }
+    setMidiSupported(WebMidiOut.isSupported());
     const code = new URLSearchParams(window.location.search).get("s");
     if (!code) return;
     const data = decodeShare(code);
     if (data) hydrateFromPayload(data, "shared");
   }, [hydrateFromPayload]);
+
+  function persistSections(next: Section[]) {
+    setSections(next);
+    try {
+      window.localStorage.setItem(SECTIONS_KEY, JSON.stringify(next));
+    } catch {
+      // storage full/unavailable — sections are a convenience
+    }
+  }
 
   // The complexity dial rewrites roman tokens before the theory engine runs.
   const progression = useMemo(
@@ -197,6 +228,8 @@ export default function Home() {
   );
 
   const realized = useMemo(() => realizeProgression(spec), [spec]);
+
+  const melody = useMemo(() => generateMelody(realized, spec), [realized, spec]);
 
   const analyses = useMemo(
     () => progression.map((c) => analyzeRoman(c.roman, controls.mode)),
@@ -354,7 +387,12 @@ export default function Home() {
           setPlayingIndex(null);
         },
       },
-      { loop: loopOverride ?? loop, startIndex },
+      {
+        loop: loopOverride ?? loop,
+        startIndex,
+        bass: includeBass,
+        melody: includeMelody ? melody : null,
+      },
     );
   }
 
@@ -362,6 +400,7 @@ export default function Home() {
     playerRef.current?.stop();
     setIsPlaying(false);
     setPlayingIndex(null);
+    setIsPlayingSong(false);
   }
 
   function handleToggleLoop() {
@@ -453,7 +492,131 @@ export default function Home() {
 
   function handleExport() {
     if (realized.length === 0) return;
-    downloadMidi(realized, spec, { bass: includeBass });
+    downloadMidi(realized, spec, {
+      bass: includeBass,
+      melody: includeMelody ? melody : null,
+    });
+  }
+
+  // ----- WebMIDI output -----
+
+  async function handleSelectMidiOut(id: string | null) {
+    const player = playerRef.current;
+    if (!player) return;
+    if (id === null) {
+      player.midiOut.select(null);
+      setMidiOutId(null);
+      return;
+    }
+    // "__scan" (or a first pick before access is granted) requests permission.
+    if (id === "__scan" || midiOutputs.length === 0) {
+      try {
+        const outs = await player.midiOut.init();
+        setMidiOutputs(outs);
+        if (id !== "__scan" && outs.some((o) => o.id === id)) {
+          player.midiOut.select(id);
+          setMidiOutId(id);
+        }
+      } catch {
+        // permission denied or no devices — stay on audio-only
+      }
+      return;
+    }
+    player.midiOut.select(id);
+    setMidiOutId(id);
+  }
+
+  // ----- song sections -----
+
+  function realizeSong(list: Section[]): ProgressionSpec {
+    const prog: ChordSpec[] = [];
+    for (const section of list) {
+      for (let r = 0; r < section.repeat; r++) {
+        for (const c of section.progression) {
+          prog.push({ ...c, roman: applyComplexity(c.roman, controls.complexity) });
+        }
+      }
+    }
+    return { ...spec, progression: prog, feel: "full song" };
+  }
+
+  function handleAddSection() {
+    const nextName = SECTION_NAMES[Math.min(sections.length, SECTION_NAMES.length - 1)];
+    const section: Section = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: nextName,
+      progression: generated.progression.map((c) => ({ ...c })),
+      repeat: 1,
+    };
+    persistSections([...sections, section]);
+  }
+
+  function handleSectionLoad(section: Section) {
+    handleStop();
+    setGenerated((g) => ({
+      ...g,
+      progression: section.progression.map((c) => ({ ...c })),
+      feel: section.name,
+      reason: "history",
+    }));
+    setSelectedIndex(null);
+    setFocusIndex(0);
+  }
+
+  function handleSectionRename(id: string, name: string) {
+    persistSections(sections.map((s) => (s.id === id ? { ...s, name } : s)));
+  }
+
+  function handleSectionRepeat(id: string, repeat: number) {
+    persistSections(sections.map((s) => (s.id === id ? { ...s, repeat } : s)));
+  }
+
+  function handleSectionMove(id: string, dir: -1 | 1) {
+    const i = sections.findIndex((s) => s.id === id);
+    const target = i + dir;
+    if (i < 0 || target < 0 || target >= sections.length) return;
+    const next = [...sections];
+    [next[i], next[target]] = [next[target], next[i]];
+    persistSections(next);
+  }
+
+  function handleSectionDelete(id: string) {
+    persistSections(sections.filter((s) => s.id !== id));
+  }
+
+  async function handlePlaySong() {
+    const player = playerRef.current;
+    if (!player || sections.length === 0) return;
+    const songSpec = realizeSong(sections);
+    const songRealized = realizeProgression(songSpec);
+    if (songRealized.length === 0) return;
+    handleStop();
+    setIsPlayingSong(true);
+    await player.play(
+      songRealized,
+      songSpec,
+      { onStop: () => setIsPlayingSong(false) },
+      {
+        bass: includeBass,
+        melody: includeMelody ? generateMelody(songRealized, songSpec) : null,
+      },
+    );
+  }
+
+  function handleStopSong() {
+    playerRef.current?.stop();
+    setIsPlayingSong(false);
+  }
+
+  function handleExportSong() {
+    if (sections.length === 0) return;
+    const songSpec = realizeSong(sections);
+    const songRealized = realizeProgression(songSpec);
+    if (songRealized.length === 0) return;
+    downloadMidi(songRealized, songSpec, {
+      bass: includeBass,
+      melody: includeMelody ? generateMelody(songRealized, songSpec) : null,
+    });
   }
 
   async function handleShare() {
@@ -615,6 +778,10 @@ export default function Home() {
           instrument={instrument}
           shareCopied={shareCopied}
           includeBass={includeBass}
+          includeMelody={includeMelody}
+          midiSupported={midiSupported}
+          midiOutputs={midiOutputs}
+          midiOutId={midiOutId}
           onPlay={() => void playFrom(0)}
           onStop={handleStop}
           onToggleLoop={handleToggleLoop}
@@ -622,8 +789,24 @@ export default function Home() {
           onExport={handleExport}
           onShare={() => void handleShare()}
           onToggleBass={() => setIncludeBass((b) => !b)}
+          onToggleMelody={() => setIncludeMelody((m) => !m)}
+          onSelectMidiOut={(id) => void handleSelectMidiOut(id)}
         />
       </section>
+
+      <SongArranger
+        sections={sections}
+        isPlayingSong={isPlayingSong}
+        onAddCurrent={handleAddSection}
+        onLoad={handleSectionLoad}
+        onRename={handleSectionRename}
+        onRepeat={handleSectionRepeat}
+        onMove={handleSectionMove}
+        onDelete={handleSectionDelete}
+        onPlaySong={() => void handlePlaySong()}
+        onStopSong={handleStopSong}
+        onExportSong={handleExportSong}
+      />
 
       <HistoryStrip
         entries={history}

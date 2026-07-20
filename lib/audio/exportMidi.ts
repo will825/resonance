@@ -1,4 +1,5 @@
 import { Midi } from "@tonejs/midi";
+import type { MelodyNote } from "@/lib/theory/melody";
 import { arpSchedule, rhythmEvents } from "@/lib/theory/rhythm";
 import { midiToNote, pitchClassOf } from "@/lib/theory/scales";
 import type { ProgressionSpec, RealizedChord } from "@/lib/theory/types";
@@ -8,6 +9,8 @@ const SECONDS_PER_BAR = (bpm: number) => (60 / bpm) * 4; // 4/4
 export interface ExportOptions {
   /** include a root-note bassline as a second track (default true) */
   bass?: boolean;
+  /** include a melody line as a track */
+  melody?: MelodyNote[] | null;
 }
 
 /** Root of a chord placed in a bass register (C2..B2). */
@@ -79,6 +82,19 @@ export function buildMidi(
         velocity: clamp(0.75 + (Math.random() * 0.1 - 0.05)),
       });
       bassCursor += dur;
+    }
+  }
+
+  if (options.melody && options.melody.length > 0) {
+    const melodyTrack = midi.addTrack();
+    melodyTrack.name = "Melody";
+    for (const note of options.melody) {
+      melodyTrack.addNote({
+        name: midiToNote(note.midi),
+        time: note.beat * secondsPerBeat,
+        duration: note.beats * secondsPerBeat,
+        velocity: clamp(0.7 + (Math.random() * 0.12 - 0.06)),
+      });
     }
   }
 
